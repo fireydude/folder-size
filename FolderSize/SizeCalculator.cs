@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
-class SizeCalculator
+internal class SizeCalculator
 {
     private const string FILE_KEY = "(files)";
     private readonly string routeDirectory;
@@ -21,12 +16,20 @@ class SizeCalculator
 
         var sizeDictionary = new Dictionary<string, long>();
         sizeDictionary.Add(FILE_KEY, GetFolderSize(routeDirectory, false));
+        var skippedFolders = new List<(string Folder, string Exception)>();
         foreach (string dir in Directory.GetDirectories(routeDirectory))
         {
-            var sizeKb = GetFolderSize(dir);
-            var folder = TrimRouteFolder(dir, routeDirectory);
-            sizeDictionary.Add(folder, sizeKb);
-            Console.Write(".");
+            try
+            {
+                var sizeKb = GetFolderSize(dir);
+                var folder = TrimRouteFolder(dir, routeDirectory);
+                sizeDictionary.Add(folder, sizeKb);
+                Console.Write(".");
+            }
+            catch (Exception ex)
+            {
+                skippedFolders.Add(new(dir, ex.Message));
+            }
         }
         Console.Clear();
         Console.WriteLine($"Folder Size: {routeDirectory}");
@@ -51,17 +54,32 @@ class SizeCalculator
         foreach (var pair in sizeDictionary.Where(i => i.Key != FILE_KEY).OrderByDescending(i => i.Value))
         {
             Console.WriteLine(
-                String.Format(rowFormat, pair.Key, pair.Value)
+                string.Format(rowFormat, pair.Key, pair.Value)
             );
+        }
+
+        if (skippedFolders.Any())
+        {
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Skipped Folders:");
+            foreach (var pair in skippedFolders)
+            {
+                Console.WriteLine(pair.Folder);
+                Console.WriteLine(
+                    string.Format("  {0}", pair.Exception)
+                );
+            }
+            Console.ResetColor();
         }
     }
 
-    string TrimRouteFolder(string folder, string route)
+    private string TrimRouteFolder(string folder, string route)
     {
         return folder.Substring(route.Length + 1);
     }
 
-    long GetFolderSize(string folder, bool includeSubFolders = true)
+    private long GetFolderSize(string folder, bool includeSubFolders = true)
     {
         long size = 0;
         var searchOption = includeSubFolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;

@@ -1,11 +1,8 @@
-﻿using System;
-using System.IO;
-
-namespace FolderSize
+﻿namespace FolderSize
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             var routeDirectory = args.Length == 1 ? args[0] : Directory.GetCurrentDirectory();
 
