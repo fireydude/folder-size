@@ -1,6 +1,7 @@
 internal class SizeCalculator
 {
     private const string FILE_KEY = "(files)";
+    private const long ONE_GIGABYTE = 1024L * 1024 * 1024;
     private readonly string routeDirectory;
 
     public SizeCalculator(string routeDirectory)
@@ -12,7 +13,6 @@ internal class SizeCalculator
     {
         Console.WriteLine("**************");
         Console.WriteLine($"Folder Size: {routeDirectory}");
-        Console.WriteLine("measured in bytes");
 
         var sizeDictionary = new Dictionary<string, long>();
         sizeDictionary.Add(FILE_KEY, GetFolderSize(routeDirectory, false));
@@ -39,7 +39,7 @@ internal class SizeCalculator
         Console.WriteLine();
         Console.WriteLine("Total size:");
         Console.WriteLine(
-            string.Format(rowFormat, "files and folders", sizeDictionary.Values.Sum())
+            string.Format(rowFormat, "files and folders", BytesToString(sizeDictionary.Values.Sum()))
             );
         Console.WriteLine();
 
@@ -47,15 +47,18 @@ internal class SizeCalculator
         Console.WriteLine("Files:"
         );
         Console.WriteLine(
-            string.Format(rowFormat, "all files", filesValue)
+            string.Format(rowFormat, "all files", BytesToString(filesValue))
         );
 
         Console.WriteLine("Subfolders:");
         foreach (var pair in sizeDictionary.Where(i => i.Key != FILE_KEY).OrderByDescending(i => i.Value))
         {
+            if (pair.Value > ONE_GIGABYTE)
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.WriteLine(
-                string.Format(rowFormat, pair.Key, pair.Value)
+                string.Format(rowFormat, pair.Key, BytesToString(pair.Value))
             );
+            Console.ResetColor();
         }
 
         if (skippedFolders.Any())
@@ -89,5 +92,16 @@ internal class SizeCalculator
             size += fi.Length;
         }
         return size;
+    }
+
+    private string BytesToString(long byteCount)
+    {
+        string[] suf = { "B", "KB", "MB", "GB", "TB", "PB", "EB" }; //Longs run out around EB
+        if (byteCount == 0)
+            return "0" + suf[0];
+        long bytes = Math.Abs(byteCount);
+        int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
+        double num = Math.Round(bytes / Math.Pow(1024, place), 1);
+        return (Math.Sign(byteCount) * num).ToString() + suf[place];
     }
 }
